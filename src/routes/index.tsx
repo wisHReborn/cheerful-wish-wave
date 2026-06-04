@@ -18,8 +18,8 @@ export const Route = createFileRoute("/")({
         content:
           "อวยพรวันเกิดแบบวัยโจ๋",
       },
-      { property: "og:title", content: "HappyBDay To You — การ์ดวันเกิดสุดคิวท์" },
-      { property: "og:description", content: "สร้างการ์ดวันเกิดน่ารักๆ ส่งให้เพื่อนทางลิงก์" },
+      { property: "og:title", content: "HappyBDay To You" },
+      { property: "og:description", content: "อวยพรวันเกิดแบบวัยโจ๋" },
     ],
   }),
   component: CreatePage,
