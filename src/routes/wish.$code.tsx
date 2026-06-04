@@ -3,12 +3,21 @@ import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { BearCake } from "@/components/BearCake";
 import { decodeCard } from "@/lib/card-data";
+import { z } from "zod";
+
+const searchSchema = z.object({
+  blown: z.boolean().catch(false),
+});
 
 export const Route = createFileRoute("/wish/$code")({
+  validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: "🎉 มีคนส่งคำอวยพรวันเกิดมาให้คุณ!" },
-      { name: "description", content: "เปิดการ์ดวันเกิดสุดคิวท์ที่เพื่อนส่งให้ พร้อมตัวการ์ตูนเป่าเค้กและพลุกระดาษ" },
+      {
+        name: "description",
+        content: "เปิดการ์ดวันเกิดสุดคิวท์ที่เพื่อนส่งให้ พร้อมตัวการ์ตูนเป่าเค้กและพลุกระดาษ",
+      },
       { property: "og:title", content: "🎉 มีคนส่งคำอวยพรวันเกิดมาให้คุณ!" },
       { property: "og:description", content: "แตะเพื่อเป่าเทียนและรับคำอวยพรน่ารักๆ" },
     ],
@@ -18,8 +27,9 @@ export const Route = createFileRoute("/wish/$code")({
 
 function WishPage() {
   const { code } = Route.useParams();
+  const { blown } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const card = decodeCard(code);
-  const [blown, setBlown] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const fireConfetti = () => {
@@ -35,12 +45,24 @@ function WishPage() {
 
   const playMelody = () => {
     try {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = new AC();
       // Happy Birthday (simplified)
       const notes: [number, number][] = [
-        [392, 0.3], [392, 0.2], [440, 0.5], [392, 0.5], [523, 0.5], [494, 1.0],
-        [392, 0.3], [392, 0.2], [440, 0.5], [392, 0.5], [587, 0.5], [523, 1.0],
+        [392, 0.3],
+        [392, 0.2],
+        [440, 0.5],
+        [392, 0.5],
+        [523, 0.5],
+        [494, 1.0],
+        [392, 0.3],
+        [392, 0.2],
+        [440, 0.5],
+        [392, 0.5],
+        [587, 0.5],
+        [523, 1.0],
       ];
       let t = ctx.currentTime;
       for (const [freq, dur] of notes) {
@@ -56,12 +78,14 @@ function WishPage() {
         o.stop(t + dur);
         t += dur;
       }
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
   };
 
   const handleBlow = () => {
     if (blown) return;
-    setBlown(true);
+    navigate({ search: { blown: true } });
     fireConfetti();
     playMelody();
     setTimeout(fireConfetti, 800);
@@ -77,7 +101,10 @@ function WishPage() {
         <div className="text-6xl">🎈</div>
         <h1 className="mt-4 text-2xl font-bold">การ์ดนี้เปิดไม่ออก</h1>
         <p className="mt-2 text-sm text-muted-foreground">ลิงก์อาจเสียหายหรือไม่ถูกต้อง</p>
-        <Link to="/" className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground">
+        <Link
+          to="/"
+          className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+        >
           ← สร้างการ์ดใหม่
         </Link>
       </main>
@@ -110,7 +137,9 @@ function WishPage() {
         <div className="w-full animate-pop-in space-y-4 rounded-3xl border border-border bg-card p-6 text-center shadow-[0_8px_0_color-mix(in_oklab,var(--primary)_18%,transparent)]">
           <p className="text-2xl">🎂🎉🎈</p>
           <h2 className="font-display text-2xl font-bold text-primary">Happy Birthday!</h2>
-          <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">{card.msg}</p>
+          <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
+            {card.msg}
+          </p>
           <div className="border-t border-dashed border-border pt-3">
             <p className="text-xs text-muted-foreground">ด้วยรักจาก</p>
             <p className="text-lg font-semibold text-foreground">{card.from}</p>
@@ -124,7 +153,10 @@ function WishPage() {
         </div>
       )}
 
-      <Link to="/" className="mt-8 text-xs text-muted-foreground underline-offset-2 hover:underline">
+      <Link
+        to="/"
+        className="mt-8 text-xs text-muted-foreground underline-offset-2 hover:underline"
+      >
         สร้างการ์ดของคุณเอง →
       </Link>
     </main>

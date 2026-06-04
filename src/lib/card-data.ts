@@ -17,7 +17,11 @@ export function decodeCard(encoded: string): CardData | null {
     while (b64.length % 4) b64 += "=";
     const json = decodeURIComponent(escape(atob(b64)));
     const data = JSON.parse(json);
-    if (typeof data?.to === "string" && typeof data?.msg === "string" && typeof data?.from === "string") {
+    if (
+      typeof data?.to === "string" &&
+      typeof data?.msg === "string" &&
+      typeof data?.from === "string"
+    ) {
       return data;
     }
     return null;
