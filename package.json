@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "deploy": "npm run build && $env:NITRO_COMPATIBILITY_DATE='2024-04-01'; npx nitro build --preset cloudflare-pages && New-Item -ItemType Directory -Path deploy-ready -Force && Copy-Item -Path dist/client/* -Destination deploy-ready/ -Recurse -Force && Copy-Item -Path dist/server/* -Destination deploy-ready/ -Recurse -Force && Move-Item -Path deploy-ready/index.js -Destination deploy-ready/_worker.js -Force && npx wrangler pages deploy deploy-ready --project-name=cheerful-wish-wave --commit-dirty=true && Remove-Item -Path deploy-ready -Recurse -Force"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
