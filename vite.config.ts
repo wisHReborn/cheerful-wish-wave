@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    preset: "cloudflare-pages",
+    compatibilityDate: "2024-04-01",
+  },
 });

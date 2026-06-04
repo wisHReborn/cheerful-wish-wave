@@ -12,11 +12,11 @@ export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "HappyBDay To You — ส่งการ์ดวันเกิดน่ารักๆ ให้เพื่อน" },
+      { title: "HappyBDay To You" },
       {
         name: "description",
         content:
-          "สร้างการ์ดอวยพรวันเกิดออนไลน์สุดคิวท์ พร้อมตัวการ์ตูนเป่าเค้กและพลุกระดาษ ส่งลิงก์ให้เพื่อนได้ใน 1 นาที",
+          "อวยพรวันเกิดแบบวัยโจ๋",
       },
       { property: "og:title", content: "HappyBDay To You — การ์ดวันเกิดสุดคิวท์" },
       { property: "og:description", content: "สร้างการ์ดวันเกิดน่ารักๆ ส่งให้เพื่อนทางลิงก์" },
