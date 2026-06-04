@@ -230,8 +230,11 @@ function CreatePage() {
             <p className="text-5xl animate-bounce">🎉✨🎈</p>
             <h2 className="text-3xl font-bold text-primary tracking-tight">Happy Birthday!</h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              ขอให้มีความสุขมากๆ นะ!<br />
-              ขอให้เป็นปีที่ดีและเต็มไปด้วยรอยยิ้ม
+              ขอให้มีความสุขมากๆ นะพี่อุ๋มอิ๋ม!<br />
+              ขอให้เป็นปีที่ดีและเต็มไปด้วยรอยยิ้ม<br />
+              ประสบความสำเร็จในทุกๆ เรื่องที่ตั้งใจไว้<br />
+              และขอให้สุขภาพแข็งแรงนะ!<br />
+              
             </p>
             <div className="pt-6">
               <button 
