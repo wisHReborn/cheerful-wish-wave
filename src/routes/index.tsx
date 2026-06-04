@@ -48,11 +48,11 @@ function CreatePage() {
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center px-5 pb-16 pt-10">
       {/* Bunting */}
       <div className="mb-2 flex w-full justify-center gap-1.5" aria-hidden="true">
-        {["sprinkle-pink", "sprinkle-yellow", "sprinkle-mint", "sprinkle-sky", "sprinkle-peach", "sprinkle-pink", "sprinkle-yellow"].map((c, i) => (
+        {["--sprinkle-pink", "--sprinkle-yellow", "--sprinkle-mint", "--sprinkle-sky", "--sprinkle-peach", "--sprinkle-pink", "--sprinkle-yellow"].map((c, i) => (
           <span
             key={i}
-            className={`block h-3 w-3 rotate-45 rounded-sm bg-${c}`}
-            style={{ animation: `float-bob 3s ease-in-out ${i * 0.15}s infinite` }}
+            className="block h-3 w-3 rotate-45 rounded-sm"
+            style={{ backgroundColor: `var(${c})`, animation: `float-bob 3s ease-in-out ${i * 0.15}s infinite` }}
           />
         ))}
       </div>
