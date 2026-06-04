@@ -138,7 +138,38 @@ function CreatePage() {
     });
   }, []);
 
+  const playBlowSound = useCallback(() => {
+    try {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AC();
+      const bufferSize = ctx.sampleRate * 0.5; // 0.5 seconds
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Fill with white noise
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1000, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.5);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.5, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+      noise.connect(filter).connect(gain).connect(ctx.destination);
+      noise.start();
+    } catch { /* noop */ }
+  }, []);
+
   const handleBlow = () => {
+    playBlowSound();
     setIsBlown(true);
     fireConfetti();
     setTimeout(fireConfetti, 400);
