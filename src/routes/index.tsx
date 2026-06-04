@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useCallback, useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 import { BearCake } from "@/components/BearCake";
-import { encodeCard } from "@/lib/card-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,118 +15,241 @@ export const Route = createFileRoute("/")({
   component: CreatePage,
 });
 
-function CreatePage() {
-  const [to, setTo] = useState("");
-  const [msg, setMsg] = useState("");
-  const [from, setFrom] = useState("");
-  const [copied, setCopied] = useState(false);
+function MusicToggle() {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const timerRef = useRef<number | null>(null);
 
-  const link = useMemo(() => {
-    if (!to.trim() || !msg.trim() || !from.trim()) return "";
-    const code = encodeCard({ to: to.trim(), msg: msg.trim(), from: from.trim() });
-    if (typeof window === "undefined") return `/wish/${code}`;
-    return `${window.location.origin}/wish/${code}`;
-  }, [to, msg, from]);
-
-  const previewPath = useMemo(() => {
-    if (!link) return "";
-    return new URL(link).pathname;
-  }, [link]);
-
-  const handleCopy = async () => {
-    if (!link) return;
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* noop */
+  const playBirthdayMelody = useCallback(() => {
+    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      audioCtxRef.current = new AC();
     }
-  };
+    
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    if (ctx.state === 'suspended') return;
+
+    const notes: [number, number][] = [
+      [392, 0.4], [392, 0.2], [440, 0.6], [392, 0.6], [523, 0.6], [494, 1.2],
+      [392, 0.4], [392, 0.2], [440, 0.6], [392, 0.6], [587, 0.6], [523, 1.2],
+      [392, 0.4], [392, 0.2], [784, 0.6], [659, 0.6], [523, 0.6], [494, 0.6], [440, 1.2],
+      [698, 0.4], [698, 0.2], [659, 0.6], [523, 0.6], [587, 0.6], [523, 1.2],
+    ];
+
+    let t = ctx.currentTime + 0.1;
+    for (const [freq, dur] of notes) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "triangle";
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.1, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(t);
+      o.stop(t + dur);
+      t += dur;
+    }
+
+    timerRef.current = window.setTimeout(() => {
+      playBirthdayMelody();
+    }, (t - ctx.currentTime) * 1000);
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying) {
+      playBirthdayMelody();
+    } else {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().then(() => {
+          audioCtxRef.current = null;
+        });
+      }
+    }
+
+    const unlockAudio = () => {
+      if (isPlaying && audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().then(() => {
+          playBirthdayMelody();
+        });
+      }
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, [isPlaying, playBirthdayMelody]);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center px-5 pb-16 pt-10">
-      {/* Bunting */}
-      <div className="mb-2 flex w-full justify-center gap-1.5" aria-hidden="true">
-        {["--sprinkle-pink", "--sprinkle-yellow", "--sprinkle-mint", "--sprinkle-sky", "--sprinkle-peach", "--sprinkle-pink", "--sprinkle-yellow"].map((c, i) => (
-          <span
-            key={i}
-            className="block h-3 w-3 rotate-45 rounded-sm"
-            style={{ backgroundColor: `var(${c})`, animation: `float-bob 3s ease-in-out ${i * 0.15}s infinite` }}
-          />
-        ))}
-      </div>
-
-      <h1 className="text-center text-4xl font-bold text-foreground">
-        HappyBDay <span className="text-primary">To You</span>
-      </h1>
-      <p className="mt-2 text-center text-sm text-muted-foreground">
-        สร้างการ์ดวันเกิดสุดคิวท์ใน 1 นาที 🎂
-      </p>
-
-      <div className="my-2">
-        <BearCake />
-      </div>
-
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="w-full space-y-4 rounded-3xl border border-border bg-card p-6 shadow-[0_8px_0_color-mix(in_oklab,var(--primary)_15%,transparent)]"
+    <div className="fixed bottom-6 right-6 z-50">
+      <button
+        onClick={() => setIsPlaying(!isPlaying)}
+        className={`flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-primary text-2xl text-white shadow-xl transition-all hover:scale-110 active:scale-95 ${isPlaying ? 'animate-wiggle' : ''}`}
+        aria-label="Toggle Music"
       >
-        <Field label="ถึงเพื่อน (To)" value={to} onChange={setTo} placeholder="ชื่อเพื่อนที่จะอวยพร" />
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">ข้อความอวยพร</label>
-          <textarea
-            value={msg}
-            onChange={(e) => setMsg(e.target.value)}
-            placeholder="สุขสันต์วันเกิดนะเพื่อน ขอให้มีความสุขมากๆ 🎉"
-            rows={4}
-            maxLength={400}
-            className="w-full resize-none rounded-2xl border border-input bg-input/30 px-4 py-3 text-sm outline-none transition focus:border-primary focus:bg-card"
-          />
-          <p className="mt-1 text-right text-xs text-muted-foreground">{msg.length}/400</p>
-        </div>
-        <Field label="จากใคร (From)" value={from} onChange={setFrom} placeholder="ชื่อของคุณ" />
-
-        <button
-          type="button"
-          onClick={handleCopy}
-          disabled={!link}
-          className="w-full rounded-2xl bg-primary px-5 py-4 text-base font-semibold text-primary-foreground shadow-[0_5px_0_color-mix(in_oklab,var(--primary)_50%,black)] transition active:translate-y-0.5 active:shadow-[0_2px_0_color-mix(in_oklab,var(--primary)_50%,black)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-        >
-          {copied ? "✓ คัดลอกลิงก์แล้ว!" : "🎁 สร้างลิงก์อวยพร"}
-        </button>
-
-        {link && (
-          <div className="space-y-2 rounded-2xl bg-muted p-3 text-xs">
-            <p className="break-all text-muted-foreground">{link}</p>
-            <Link
-              to="/wish/$code"
-              params={{ code: previewPath.split("/").pop() ?? "" }}
-              className="inline-block font-semibold text-primary underline-offset-2 hover:underline"
-            >
-              👀 ดูตัวอย่างการ์ด →
-            </Link>
-          </div>
-        )}
-      </form>
-    </main>
+        {isPlaying ? '🎵' : '🔇'}
+      </button>
+      {isPlaying && (
+        <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-primary"></span>
+        </span>
+      )}
+    </div>
   );
 }
 
-function Field({
-  label, value, onChange, placeholder,
-}: { label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+function CreatePage() {
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [passcode, setPasscode] = useState("");
+  const [error, setError] = useState(false);
+  const [isBlown, setIsBlown] = useState(false);
+
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passcode === "0506") {
+      setIsAuthorized(true);
+      setError(false);
+    } else {
+      setError(true);
+      setPasscode("");
+      setTimeout(() => setError(false), 1000);
+    }
+  };
+
+  const fireConfetti = useCallback(() => {
+    const colors = ["#ff9eb5", "#ffd56b", "#9be3c5", "#9ccef0", "#ffb787"];
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: colors,
+    });
+  }, []);
+
+  const handleBlow = () => {
+    setIsBlown(true);
+    fireConfetti();
+    setTimeout(fireConfetti, 400);
+    setTimeout(fireConfetti, 800);
+  };
+
+  if (!isAuthorized) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-5 py-10">
+        <div className="w-full space-y-8 rounded-[2.5rem] border border-border/50 bg-card/80 backdrop-blur-sm p-10 text-center shadow-2xl ring-1 ring-black/5 animate-pop-in">
+          <div className="mx-auto mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-4xl animate-bounce">
+            🔐
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">ใส่รหัสลับวันเกิด</h1>
+            <p className="text-muted-foreground">กรุณาใส่ วันและเดือน เป็นตัวเลขให้ถูกต้อง</p>
+          </div>
+          
+          <form onSubmit={handleAuth} className="space-y-6">
+            <div className="relative">
+              <input
+                type="text"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="เช่น 0101"
+                className={`w-full rounded-2xl border-2 bg-input/50 px-6 py-4 text-center text-3xl font-bold tracking-[0.5em] outline-none transition-all ${
+                  error ? "border-destructive animate-wiggle" : "border-transparent focus:border-primary focus:bg-card"
+                }`}
+                autoFocus
+              />
+              {error && <p className="mt-2 text-sm font-semibold text-destructive">รหัสไม่ถูกต้อง ลองใหม่อีกครั้งนะ 🥺</p>}
+            </div>
+            
+            <button
+              type="submit"
+              className="w-full rounded-2xl bg-primary py-4 text-lg font-bold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              ยืนยันวันเกิด 🎂
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-foreground">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        maxLength={60}
-        className="w-full rounded-2xl border border-input bg-input/30 px-4 py-3 text-sm outline-none transition focus:border-primary focus:bg-card"
-      />
-    </div>
+    <>
+      {isBlown ? (
+        <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-5 pb-10 pt-8 animate-pop-in">
+          <h1 className="text-center text-4xl font-bold text-foreground mb-6 drop-shadow-sm">
+            เย้! เป่าดับแล้ว 🎂
+          </h1>
+          <div className="relative my-4 group cursor-pointer" onClick={fireConfetti}>
+            <div className="absolute -inset-4 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+            <BearCake blown={true} cheering={true} />
+          </div>
+          <div className="mt-8 w-full space-y-4 rounded-[2.5rem] border border-border/50 bg-card/80 backdrop-blur-sm p-10 text-center shadow-2xl ring-1 ring-black/5 animate-pop-in [animation-delay:200ms]">
+            <p className="text-5xl animate-bounce">🎉✨🎈</p>
+            <h2 className="text-3xl font-bold text-primary tracking-tight">Happy Birthday!</h2>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              ขอให้มีความสุขมากๆ นะ!<br />
+              ขอให้เป็นปีที่ดีและเต็มไปด้วยรอยยิ้ม
+            </p>
+            <div className="pt-6">
+              <button 
+                onClick={() => setIsBlown(false)}
+                className="rounded-2xl bg-secondary px-8 py-3 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80 transition-all hover:scale-105 active:scale-95"
+              >
+                ← กลับไปหน้าเป่าเค้ก
+              </button>
+            </div>
+          </div>
+          <p className="mt-8 text-xs text-muted-foreground/60 italic">แตะที่น้องหมีเพื่อจุดพลุอีกรอบ! ✨</p>
+        </main>
+      ) : (
+        <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-5 py-10 overflow-hidden">
+          <div className="mb-10 flex w-full justify-center gap-2" aria-hidden="true">
+            {["--sprinkle-pink", "--sprinkle-yellow", "--sprinkle-mint", "--sprinkle-sky", "--sprinkle-peach", "--sprinkle-pink", "--sprinkle-yellow"].map((c, i) => (
+              <span
+                key={i}
+                className="block h-4 w-4 rotate-45 rounded-md shadow-sm"
+                style={{ backgroundColor: `var(${c})`, animation: `float-bob 3s ease-in-out ${i * 0.2}s infinite` }}
+              />
+            ))}
+          </div>
+          <div className="text-center space-y-2 mb-10">
+            <h1 className="text-5xl font-bold text-foreground tracking-tighter sm:text-6xl leading-tight">
+              Happy birthday <br />
+              <span className="text-primary">To You</span>
+            </h1>
+            <p className="text-lg text-muted-foreground font-medium">มาเป่าเค้กกันดีกว่าาาาาาา 🎂</p>
+          </div>
+          <div className="my-10 scale-110 sm:scale-125 transition-all duration-700 hover:scale-[1.2] sm:hover:scale-[1.4] drop-shadow-xl">
+            <BearCake />
+          </div>
+          <button
+            onClick={handleBlow}
+            className="mt-10 group relative flex items-center justify-center overflow-hidden rounded-full bg-primary px-14 py-6 text-2xl font-black text-primary-foreground shadow-[0_10px_0_color-mix(in_oklab,var(--primary)_50%,black)] transition-all hover:scale-105 active:translate-y-2 active:shadow-[0_2px_0_color-mix(in_oklab,var(--primary)_50%,black)]"
+          >
+            <span className="relative z-10 flex items-center gap-3">🕯️ เป่าเค้กเลย!</span>
+            <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+          </button>
+          <div className="mt-12 flex flex-col items-center gap-2">
+            <p className="text-sm font-semibold text-muted-foreground/80 animate-pulse">แตะปุ่มเพื่อเซอร์ไพรส์ ✨</p>
+            <div className="h-1 w-12 rounded-full bg-primary/20" />
+          </div>
+          <div className="fixed -bottom-32 -left-32 h-80 w-80 rounded-full bg-primary/10 blur-[100px] animate-pulse" />
+          <div className="fixed -top-32 -right-32 h-80 w-80 rounded-full bg-secondary/20 blur-[100px] animate-pulse [animation-delay:1s]" />
+        </main>
+      )}
+      <MusicToggle />
+    </>
   );
 }
